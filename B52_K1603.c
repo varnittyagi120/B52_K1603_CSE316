@@ -21,3 +21,12 @@ void calculateneed(int P,int R,int need[P][R], int max[P][R],int allocation[P][R
           printf("\n");
         }
 }
+void function(int *p)
+{
+    printf("thread %d \n",*p);
+    pthread_mutex_lock(&mutex);
+    printf("Updated data of bank %d \n",++a);
+    pthread_cond_signal( &cond ); 
+    pthread_mutex_unlock( & mutex );
+    pthread_exit(0);  
+}
