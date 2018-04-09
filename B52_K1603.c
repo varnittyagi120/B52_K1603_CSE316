@@ -4,19 +4,20 @@
 #include<pthread.h>
 int a;
 a=100;  //like a shared variable || data of bank 
-pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
-void calculateneed(int P,int R,int need[P][R], int max[P][R],int allocation[P][R])
+//T=Number of process U=number of resources
+pthread_mutex_t mutex1=PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t cond1=PTHREAD_COND_INITIALIZER;
+void calculateneed(int T,int U,int need1[T][U], int maximum[T][U],int allocation[T][U])
 {
-    for (int i = 0 ; i < P ; i++)
-        for (int j = 0 ; j < R ; j++)
-            need[i][j] = max[i][j] - allocation[i][j];
+    for (int i = 0 ; i < T ; i++)
+        for (int j = 0 ; j < U ; j++)
+            need1[i][j] = maximum[i][j] - allocation[i][j];
     printf("need of processes\n");
-    for (int i = 0 ; i < P ; i++)
+    for (int i = 0 ; i < T ; i++)
         {
-          for (int j = 0 ; j < R ; j++)
+          for (int j = 0 ; j < U ; j++)
               {
-                   printf("%d ",need[i][j]);
+                   printf("%d ",need1[i][j]);
               }
           printf("\n");
         }
@@ -24,73 +25,62 @@ void calculateneed(int P,int R,int need[P][R], int max[P][R],int allocation[P][R
 void function(int *p)
 {
     printf("thread %d \n",*p);
-    pthread_mutex_lock(&mutex);
+    pthread_mutex_lock(&mutex1);
     printf("Updated data of bank %d \n",++a);
-    pthread_cond_signal( &cond ); 
-    pthread_mutex_unlock( & mutex );
+    pthread_cond_signal(&cond1); 
+    pthread_mutex_unlock(&mutex1);
     pthread_exit(0);  
 }
-
-void Safeseq(int P,int R,int processes[P], int avail[R], int maxm[][R],int allot[][R])
+void Safeseq(int T,int U,int process[T], int available[U], int maximum[][U],int allocation[][U])
 {
-    int i;
-    pthread_t th[P];
+    int i,need1[T][U],count1=0,safesequence[T];
+    int kaam[U]; //work
+    pthread_t th[T];
     bool sf=true;
-    int need[P][R];
+     bool f1[T];
 
-    calculateneed(P,R,need, maxm, allot);
-
-  
-    bool finish[P];
-    for(int i=0;i<P;i++)
+    calculateneed(T,U,need1, maximum, allocation);
+    for(int i=0;i<T;i++)
        {
-          finish[i]=false;
-       } 
-
-   
-    int safeSeq[P];
-
-    
-    int work[R];
-    for (int i = 0; i < R ; i++)
-        work[i] = avail[i];
-
-     int count = 0;
-     while (count < P)
-     {
+          f1[i]=false;
+       }
+    for (int i = 0; i < U ; i++)
+        kaam[i] = available[i];
+ while (count1 < T)
+  {
        
-         bool found = false;
-         for (int p = 0; p < P; p++)
+         bool flag = false;
+         for (int i = 0; i < T; i++)
          {
             
-             if (finish[p] == false)
+             if (f1[i] == false)
              {
                
-                int j;
-                 for (j = 0; j < R; j++)
-                     if (need[p][j] > work[j])
+                int c;
+                 for (c= 0; c < U; c++)
+                     if (need1[i][c] > kaam[c])
                         break;
 
                 
-                 if (j == R)
+                 if (c == U)
                  {
                  
-                     for (int k = 0 ; k < R ; k++)
-                         work[k] =work[k]+allot[p][k];
+                     for (int v= 0 ; v < U ; v++)
+                         kaam[v] =kaam[v]+allocation[i][v];
 
                    
-                     safeSeq[count++] = p;
+                     safesequence[count1++] = i;
 
                   
-                     finish[p] = true;
+                     f1[i] = true;
 
-                     found = true;
+                     flag = true;
                 }
             }
         }
 
    
-         if (found == false)
+         if (flag== false)
          {
              printf("System is not in safe state");
              sf=false;
@@ -99,27 +89,27 @@ void Safeseq(int P,int R,int processes[P], int avail[R], int maxm[][R],int allot
     }
     printf("System is in safe state.\nSafe"
           " sequence is: ");
-    for (int i = 0; i < P ; i++)
-         printf("%d ",safeSeq[i]);
+    for (int i = 0; i < T ; i++)
+         printf("%d ",safesequence[i]);
     printf("\n");
     int j=0,k=0,l=0;
- if(sf)
+  if(sf)
    {  
-    pthread_t th[P];
+    pthread_t th[T];
     int g=0;
-    for(int i=0;i<P;i++)
+    for(int i=0;i<T;i++)
      {
-      g=safeSeq[i];
-      pthread_create(&th[safeSeq[i]],NULL,function,&g);
-      pthread_join(th[safeSeq[i]],NULL);
+      g=safesequence[i];
+      pthread_create(&th[safesequence[i]],NULL,function,&g);
+      pthread_join(th[safesequence[i]],NULL);
     }
-     pthread_mutex_init(&mutex,NULL);
-     while(a<=P)
+     pthread_mutex_init(&mutex1,NULL);
+     while(a<=T)
     {
-    pthread_cond_wait( & cond, & mutex ); 
+    pthread_cond_wait(&cond1, &mutex1); 
     }
-    pthread_mutex_unlock( & mutex );
-  }
+    pthread_mutex_unlock(&mutex1);
+   }
 }
 int main()
 {
